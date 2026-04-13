@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0f0f0f">
+<title>Contas de Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8; --text2: #8a877f; --text3: #55534e;
+    --green: #4ade80; --green-bg: rgba(74,222,128,0.1);
+    --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.1);
+    --red: #f87171; --red-bg: rgba(248,113,113,0.1);
+    --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+  .header { padding: 24px 20px 14px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .app-title { font-size: 22px; font-weight: 500; letter-spacing: -0.3px; }
+  .app-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .mes-select { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer; outline: none; }
+  .mes-select:focus { border-color: var(--border2); }
+
+  .nav { display: flex; gap: 2px; background: var(--surface); border-radius: var(--radius); padding: 3px; border: 1px solid var(--border); }
+  .nav-btn { flex: 1; padding: 9px 4px; border: none; background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; border-radius: 9px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+  .nav-btn.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  .content { padding: 20px; }
+  .page { display: none; } .page.active { display: block; }
+
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+  .metric-value { font-size: 20px; font-weight: 500; letter-spacing: -0.3px; }
+  .metric-value.green { color: var(--green); } .metric-value.amber { color: var(--amber); } .metric-value.red { color: var(--red); }
+
+  .section-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; font-family: 'DM Mono', monospace; margin-bottom: 12px; }
+
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 18px; }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .chart-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+  .chart-total { font-size: 24px; font-weight: 500; letter-spacing: -0.5px; font-family: 'DM Mono', monospace; }
+  .chart-total-right { text-align: right; }
+  .chart-delta { font-size: 12px; margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .chart-wrap { position: relative; width: 100%; height: 180px; }
+  .legend { display: flex; gap: 14px; margin-top: 12px; font-size: 12px; color: var(--text2); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+  .cat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .cat-label { font-size: 13px; color: var(--text); min-width: 80px; }
+  .cat-bar-wrap { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .cat-bar { height: 100%; border-radius: 3px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+  .cat-val { font-size: 12px; color: var(--text2); min-width: 68px; text-align: right; font-family: 'DM Mono', monospace; }
+
+  .conta-item { display: flex; align-items: center; gap: 12px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; transition: border-color .15s; }
+  .conta-item:hover { border-color: var(--border2); }
+  .conta-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .conta-info { flex: 1; min-width: 0; }
+  .conta-nome { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conta-sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .conta-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .conta-valor { font-size: 14px; font-weight: 500; font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+  .badge-paga { background: var(--green-bg); color: var(--green); }
+  .badge-pendente { background: var(--amber-bg); color: var(--amber); }
+  .badge-vencida { background: var(--red-bg); color: var(--red); }
+
+  .actions { display: flex; gap: 6px; align-items: center; }
+  .btn-pay { background: none; border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; padding: 4px 9px; cursor: pointer; transition: all .15s; }
+  .btn-pay:hover { border-color: var(--green); color: var(--green); }
+  .btn-del { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; transition: color .15s; }
+  .btn-del:hover { color: var(--red); }
+
+  .alert-item { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: var(--radius); margin-bottom: 8px; border-left: 3px solid transparent; }
+  .alert-red { background: var(--red-bg); border-color: var(--red); }
+  .alert-amber { background: var(--amber-bg); border-color: var(--amber); }
+  .alert-green { background: var(--green-bg); border-color: var(--green); }
+  .alert-nome { font-size: 14px; font-weight: 500; }
+  .alert-red .alert-nome { color: var(--red); } .alert-amber .alert-nome { color: var(--amber); } .alert-green .alert-nome { color: var(--green); }
+  .alert-sub { font-size: 12px; margin-top: 2px; opacity: .75; font-family: 'DM Mono', monospace; }
+
+  .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 30px 20px; text-align: center; cursor: pointer; margin-bottom: 18px; transition: all .2s; }
+  .upload-zone:hover { border-color: rgba(255,255,255,0.3); background: var(--surface); }
+  .upload-icon { margin: 0 auto 10px; color: var(--text3); }
+  .upload-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .upload-sub { font-size: 12px; color: var(--text2); }
+  input[type=file] { display: none; }
+
+  .ai-status { display: none; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; color: var(--text2); }
+  .ai-status.visible { display: flex; }
+  .spinner { width: 15px; height: 15px; flex-shrink: 0; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .divider { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-text { font-size: 12px; color: var(--text3); white-space: nowrap; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .field input, .field select { width: 100%; padding: 10px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color .15s; -webkit-appearance: none; }
+  .field input:focus, .field select:focus { border-color: var(--border2); }
+  .field select option { background: #1a1a1a; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-primary { width: 100%; padding: 13px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity .15s; margin-top: 4px; }
+  .btn-primary:hover { opacity: .9; } .btn-primary:active { opacity: .8; }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--text3); font-size: 14px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-title">Contas de casa</div>
+      <div class="app-sub" id="mes-atual"></div>
+    </div>
+    <select class="mes-select" id="mes-select"></select>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchPage('resumo')">Resumo</button>
+    <button class="nav-btn" onclick="switchPage('contas')">Contas</button>
+    <button class="nav-btn" onclick="switchPage('alertas')">Alertas</button>
+    <button class="nav-btn" onclick="switchPage('adicionar')">+ Adicionar</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- RESUMO -->
+  <div id="page-resumo" class="page active">
+    <div class="metrics" id="metrics"></div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-label">Visão mensal</div>
+          <div class="chart-total" id="chart-total-val">—</div>
+          <div class="chart-delta" id="chart-delta"></div>
+        </div>
+        <div class="chart-total-right">
+          <div class="chart-label">mês selecionado</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chartMensal" role="img" aria-label="Gráfico de barras mensais com valores pagos e pendentes por mês"></canvas>
+      </div>
+      <div class="legend" id="legend-mensal"></div>
+    </div>
+
+    <div class="section-title">Por categoria</div>
+    <div id="cat-list"></div>
+  </div>
+
+  <!-- CONTAS -->
+  <div id="page-contas" class="page">
+    <div id="lista-contas"></div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div id="page-alertas" class="page">
+    <div id="lista-alertas"></div>
+  </div>
+
+  <!-- ADICIONAR -->
+  <div id="page-adicionar" class="page">
+    <div class="upload-zone" onclick="document.getElementById('pdf-input').click()">
+      <svg class="upload-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M20 3H9a2.5 2.5 0 0 0-2.5 2.5v25A2.5 2.5 0 0 0 9 33h18a2.5 2.5 0 0 0 2.5-2.5V13L20 3z"/>
+        <path d="M20 3v10h10"/><path d="M18 20v8M14 24l4-4 4 4"/>
+      </svg>
+      <div class="upload-title">Subir PDF ou imagem da conta</div>
+      <div class="upload-sub">A IA extrai nome, valor e vencimento automaticamente</div>
+      <input type="file" id="pdf-input" accept=".pdf,image/*">
+    </div>
+    <div class="ai-status" id="ai-status">
+      <div class="spinner"></div>
+      <span id="ai-msg">Lendo com IA...</span>
+    </div>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-text">ou preencha manualmente</div>
+      <div class="divider-line"></div>
+    </div>
+    <div class="field"><label>Nome da conta</label><input type="text" id="f-nome" placeholder="Ex: Energia elétrica"></div>
+    <div class="row2">
+      <div class="field"><label>Valor (R$)</label><input type="number" id="f-valor" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="field"><label>Vencimento</label><input type="date" id="f-venc"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Categoria</label>
+        <select id="f-cat">
+          <option value="energia">⚡ Energia</option>
+          <option value="agua">💧 Água</option>
+          <option value="internet">📡 Internet</option>
+          <option value="aluguel">🏠 Aluguel</option>
+          <option value="gas">🔥 Gás</option>
+          <option value="cartao">💳 Cartão</option>
+          <option value="streaming">📺 Streaming</option>
+          <option value="outro">📄 Outro</option>
+        </select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="f-status">
+          <option value="pendente">Pendente</option>
+          <option value="paga">Paga</option>
+          <option value="vencida">Vencida</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="adicionarConta()">Salvar conta</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const STORAGE_KEY = 'contas_casa_v1';
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAT_COLORS = {energia:'#fbbf24',agua:'#60a5fa',internet:'#a78bfa',aluguel:'#fb923c',gas:'#34d399',cartao:'#f472b6',streaming:'#4ade80',outro:'#94a3b8'};
+const CAT_LABELS = {energia:'Energia',agua:'Água',internet:'Internet',aluguel:'Aluguel',gas:'Gás',cartao:'Cartão',streaming:'Streaming',outro:'Outro'};
+const CAT_ICONS = {energia:'⚡',agua:'💧',internet:'📡',aluguel:'🏠',gas:'🔥',cartao:'💳',streaming:'📺',outro:'📄'};
+
+let contas = [], chartInstance = null;
+let mesSelecionado = new Date().getMonth(), anoSelecionado = new Date().getFullYear();
+
+function load() { try { const d = localStorage.getItem(STORAGE_KEY); if (d) contas = JSON.parse(d); } catch(e) {} }
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(contas)); } catch(e) {} }
+function fmt(v) { return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtShort(v) { if (v >= 1000) return 'R$' + (v/1000).toFixed(1).replace('.',',') + 'k'; return 'R$' + Math.round(v); }
+
+function contasDe(m, a) {
+  return contas.filter(c => {
+    if (!c.vencimento) return false;
+    const d = new Date(c.vencimento + 'T00:00:00');
+    return d.getMonth() === m && d.getFullYear() === a;
+  });
+}
+function contasMes() { return contasDe(mesSelecionado, anoSelecionado); }
+
+function switchPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  const idx = {resumo:0,contas:1,alertas:2,adicionar:3}[p];
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if (p === 'resumo') renderResumo();
+  if (p === 'contas') renderContas();
+  if (p === 'alertas') renderAlertas();
+}
+
+function renderMetrics() {
+  const cm = contasMes();
+  const total = cm.reduce((s,c) => s + parseFloat(c.valor||0), 0);
+  const pagas = cm.filter(c => c.status==='paga').reduce((s,c) => s + parseFloat(c.valor||0), 0);
+  const pendentes = cm.filter(c => c.status==='pendente').length;
+  const vencidas = cm.filter(c => c.status==='vencida').length;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total do mês</div><div class="metric-value">${fmt(total)}</div></div>
+    <div class="metric"><div class="metric-label">Já pago</div><div class="metric-value green">${fmt(pagas)}</div></div>
+    <div class="metric"><div class="metric-label">Pendentes</div><div class="metric-value amber">${pendentes} conta${pendentes!==1?'s':''}</div></div>
+    <div class="metric"><div class="metric-label">Vencidas</div><div class="metric-value ${vencidas>0?'red':''}">${vencidas} conta${vencidas!==1?'s':''}</div></div>
+  `;
+}
+
+function renderChart() {
+  const ctx = document.getElementById('chartMensal').getContext('2d');
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const hoje = new Date();
+  const labels = [], pagos = [], pendentes = [], totais = [];
+
+  // Build 6 months centered on selected month
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(anoSelecionado, mesSelecionado - i, 1);
+    labels.push(MESES[d.getMonth()].substring(0,3));
+    const cm = contasDe(d.getMonth(), d.getFullYear());
+    const p = parseFloat(cm.filter(c=>c.status==='paga').reduce((s,c)=>s+parseFloat(c.valor||0),0).toFixed(2));
+    const n = parseFloat(cm.filter(c=>c.status!=='paga').reduce((s,c)=>s+parseFloat(c.valor||0),0).toFixed(2));
+    pagos.push(p); pendentes.push(n); totais.push(p+n);
+  }
+
+  const totalAtual = totais[totais.length - 1];
+  const totalAnterior = totais[totais.length - 2];
+  document.getElementById('chart-total-val').textContent = fmt(totalAtual);
+
+  const deltaEl = document.getElementById('chart-delta');
+  if (totalAnterior > 0) {
+    const diff = totalAtual - totalAnterior;
+    const pct = Math.round((diff / totalAnterior) * 100);
+    const sign = diff >= 0 ? '+' : '';
+    deltaEl.textContent = sign + pct + '% vs mês anterior';
+    deltaEl.style.color = diff > 0 ? '#f87171' : diff < 0 ? '#4ade80' : '#55534e';
+  } else {
+    deltaEl.textContent = '';
+  }
+
+  // Highlight current month bar
+  const barColors = labels.map((_, i) => i === 5 ? '#4ade80' : 'rgba(74,222,128,0.4)');
+  const pendColors = labels.map((_, i) => i === 5 ? '#fbbf24' : 'rgba(251,191,36,0.4)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Pago', data: pagos, backgroundColor: barColors, borderRadius: 4, borderSkipped: false, stack: 'stack' },
+        { label: 'Pendente / vencida', data: pendentes, backgroundColor: pendColors, borderRadius: 4, borderSkipped: false, stack: 'stack' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+          titleColor: '#f0ede8', bodyColor: '#8a877f',
+          callbacks: {
+            label: item => ' ' + item.dataset.label + ': ' + fmt(item.raw),
+            afterBody: items => { const t = items.reduce((s,i)=>s+i.raw,0); return t ? ['', ' Total: ' + fmt(t)] : []; }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: '#55534e', font: { size: 11, family: 'DM Mono' }, autoSkip: false } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#55534e', font: { size: 11, family: 'DM Mono' }, callback: v => fmtShort(v) } }
+      }
+    }
+  });
+
+  document.getElementById('legend-mensal').innerHTML = `
+    <span><span class="legend-dot" style="background:#4ade80"></span>Pago</span>
+    <span><span class="legend-dot" style="background:#fbbf24"></span>Pendente / vencida</span>
+  `;
+}
+
+function renderCategorias() {
+  const cm = contasMes();
+  const cats = {};
+  cm.forEach(c => { cats[c.categoria] = (cats[c.categoria]||0) + parseFloat(c.valor||0); });
+  const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+  const max = sorted[0] ? sorted[0][1] : 1;
+  const el = document.getElementById('cat-list');
+  if (!sorted.length) { el.innerHTML = '<div class="empty" style="padding:20px 0">Sem contas neste mês</div>'; return; }
+  el.innerHTML = sorted.map(([cat, val]) => `
+    <div class="cat-row">
+      <div class="cat-label">${CAT_LABELS[cat]||cat}</div>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${Math.round(val/max*100)}%;background:${CAT_COLORS[cat]||'#888'}"></div></div>
+      <div class="cat-val">${fmt(val)}</div>
+    </div>
+  `).join('');
+}
+
+function renderResumo() { renderMetrics(); renderChart(); renderCategorias(); }
+
+function renderContas() {
+  const cm = contasMes();
+  const el = document.getElementById('lista-contas');
+  if (!cm.length) { el.innerHTML = '<div class="empty">Nenhuma conta neste mês.<br>Use "+ Adicionar" para começar.</div>'; return; }
+  el.innerHTML = cm.map(c => {
+    const gi = contas.indexOf(c);
+    const badge = c.status==='paga'?'badge-paga':c.status==='vencida'?'badge-vencida':'badge-pendente';
+    const bl = c.status==='paga'?'Paga':c.status==='vencida'?'Vencida':'Pendente';
+    const venc = c.vencimento ? new Date(c.vencimento+'T00:00:00').toLocaleDateString('pt-BR') : '—';
+    return `<div class="conta-item">
+      <div class="conta-icon" style="background:${CAT_COLORS[c.categoria]||'#555'}22">${CAT_ICONS[c.categoria]||'📄'}</div>
+      <div class="conta-info"><div class="conta-nome">${c.nome}</div><div class="conta-sub">Vence ${venc}</div></div>
+      <div class="conta-right">
+        <div class="conta-valor">${fmt(c.valor)}</div>
+        <div class="actions">
+          <span class="badge ${badge}">${bl}</span>
+          ${c.status!=='paga'?`<button class="btn-pay" onclick="marcarPaga(${gi})">✓ Pagar</button>`:''}
+          <button class="btn-del" onclick="deletarConta(${gi})">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M6 6.5v3M8 6.5v3M3 3.5l.7 7.3a.5.5 0 0 0 .5.45h5.6a.5.5 0 0 0 .5-.45L11 3.5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlertas() {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const pend = contas.filter(c => c.status!=='paga' && c.vencimento);
+  const el = document.getElementById('lista-alertas');
+  if (!pend.length) { el.innerHTML = '<div class="empty">Nenhum alerta por enquanto.</div>'; return; }
+  const sorted = pend.map(c => ({ ...c, diff: Math.round((new Date(c.vencimento+'T00:00:00')-hoje)/(1000*60*60*24)), gi: contas.indexOf(c) })).sort((a,b) => a.diff-b.diff);
+  el.innerHTML = sorted.map(c => {
+    let cls = 'alert-green', label = '';
+    if (c.diff < 0) { cls='alert-red'; label=`Venceu há ${Math.abs(c.diff)} dia${Math.abs(c.diff)!==1?'s':''}`; }
+    else if (c.diff === 0) { cls='alert-amber'; label='Vence hoje'; }
+    else if (c.diff <= 3) { cls='alert-amber'; label=`Vence em ${c.diff} dia${c.diff!==1?'s':''}`; }
+    else { cls='alert-green'; label=`Vence em ${c.diff} dias`; }
+    return `<div class="alert-item ${cls}">
+      <div style="flex:1"><div class="alert-nome">${c.nome}</div><div class="alert-sub">${label} · ${fmt(c.valor)}</div></div>
+      <button class="btn-pay" onclick="marcarPaga(${c.gi});renderAlertas()">✓ Pagar</button>
+    </div>`;
+  }).join('');
+}
+
+function marcarPaga(idx) { contas[idx].status = 'paga'; save(); renderContas(); renderResumo(); }
+function deletarConta(idx) { if (confirm('Remover esta conta?')) { contas.splice(idx,1); save(); renderContas(); renderResumo(); } }
+
+function adicionarConta() {
+  const nome = document.getElementById('f-nome').value.trim();
+  const valor = document.getElementById('f-valor').value;
+  const venc = document.getElementById('f-venc').value;
+  const cat = document.getElementById('f-cat').value;
+  const status = document.getElementById('f-status').value;
+  if (!nome||!valor||!venc) { alert('Preencha nome, valor e vencimento.'); return; }
+  contas.push({ nome, valor: parseFloat(valor), vencimento: venc, categoria: cat, status, criadoEm: new Date().toISOString() });
+  save();
+  document.getElementById('f-nome').value=''; document.getElementById('f-valor').value='';
+  document.getElementById('f-venc').value=''; document.getElementById('f-status').value='pendente';
+  switchPage('contas');
+}
+
+function setupMesSelect() {
+  const sel = document.getElementById('mes-select');
+  sel.innerHTML = '';
+  for (let i = 5; i >= -2; i--) {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth()-i, 1);
+    const opt = document.createElement('option');
+    opt.value = `${d.getFullYear()}-${d.getMonth()}`;
+    opt.textContent = MESES[d.getMonth()].substring(0,3) + ' ' + d.getFullYear();
+    if (d.getMonth()===mesSelecionado && d.getFullYear()===anoSelecionado) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    const [a,m] = sel.value.split('-').map(Number);
+    anoSelecionado=a; mesSelecionado=m;
+    document.getElementById('mes-atual').textContent = MESES[m]+' '+a;
+    renderResumo(); renderContas(); renderAlertas();
+  };
+}
+
+document.getElementById('pdf-input').onchange = async function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const st = document.getElementById('ai-status'), msg = document.getElementById('ai-msg');
+  st.classList.add('visible'); msg.textContent = 'Lendo o arquivo com IA...';
+  const toBase64 = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f); });
+  try {
+    const b64 = await toBase64(file); msg.textContent = 'Extraindo dados...';
+    const isPdf = file.type==='application/pdf';
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{ role:'user', content:[
+        { type: isPdf?'document':'image', source:{type:'base64',media_type:file.type,data:b64} },
+        { type:'text', text:'Extraia os dados desta conta. Responda SOMENTE com JSON puro, sem markdown. Formato: {"nome":"nome da empresa/conta","valor":0.00,"vencimento":"YYYY-MM-DD","categoria":"energia|agua|internet|aluguel|gas|cartao|streaming|outro"}. Data de hoje: '+new Date().toISOString().split('T')[0] }
+      ]}]})
+    });
+    const data = await resp.json();
+    const parsed = JSON.parse(data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());
+    if (parsed.nome) document.getElementById('f-nome').value = parsed.nome;
+    if (parsed.valor) document.getElementById('f-valor').value = parsed.valor;
+    if (parsed.vencimento) document.getElementById('f-venc').value = parsed.vencimento;
+    if (parsed.categoria) document.getElementById('f-cat').value = parsed.categoria;
+    st.classList.remove('visible'); e.target.value='';
+  } catch(err) {
+    st.classList.remove('visible');
+    alert('Não foi possível ler o arquivo. Preencha manualmente.');
+    e.target.value='';
+  }
+};
+
+load();
+const hj = new Date(); hj.setHours(0,0,0,0);
+contas.forEach((c,i) => { if (c.status==='pendente'&&c.vencimento&&new Date(c.vencimento+'T00:00:00')<hj) contas[i].status='vencida'; });
+save();
+setupMesSelect();
+document.getElementById('mes-atual').textContent = MESES[mesSelecionado]+' '+anoSelecionado;
+renderResumo();
+</script>
+</body>
+</html>
